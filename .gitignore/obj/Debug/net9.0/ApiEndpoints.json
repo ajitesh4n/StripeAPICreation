@@ -1,0 +1,92 @@
+[
+  {
+    "ContainingType": "StripeController",
+    "Method": "OnboardUser",
+    "RelativePath": "api/Stripe/onboard",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "StripUserIntegration.Models.StripeUser\u002BStripeOnboardRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StripeController",
+    "Method": "CreatePayment",
+    "RelativePath": "api/Stripe/payment",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "StripUserIntegration.Models.PaymentRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StripeController",
+    "Method": "ResendOnboardingPost",
+    "RelativePath": "api/Stripe/resend-onboarding",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "StripUserIntegration.Models.ResendOnboardLink",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StripeController",
+    "Method": "ResendOnboarding",
+    "RelativePath": "api/Stripe/resend-onboarding/{accountId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "accountId",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "StripeController",
+    "Method": "StripeWebhook",
+    "RelativePath": "api/Stripe/webhook",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UserApiController",
+    "Method": "Create",
+    "RelativePath": "api/UserApi/create",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "user",
+        "Type": "StripUserIntegration.Models.TblUser",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

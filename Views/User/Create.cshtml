@@ -1,0 +1,140 @@
+﻿<style id="enhanced_css">
+    body {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    form {
+        background: #fff;
+        max-width: 400px;
+        margin: 40px auto;
+        padding: 25px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+        form div {
+            margin-bottom: 15px;
+        }
+
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #555;
+    }
+
+    input {
+        width: 100%;
+        padding: 10px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        transition: all 0.3s ease;
+        font-size: 14px;
+    }
+
+        input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102,126,234,0.5);
+            outline: none;
+        }
+
+    button {
+        width: 100%;
+        padding: 12px;
+        background: #667eea;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+        button:hover {
+            background: #5a67d8;
+        }
+
+    #msg {
+        text-align: center;
+        margin-top: 15px;
+        font-weight: 500;
+        color: white;
+    }
+
+    
+    
+</style>
+@{
+    ViewData["Title"] = "Onboard User";
+}
+
+<h2>User Onboard</h2>
+
+
+<form id="useronboardForm">
+    <div>
+        <label>First Name</label>
+        <input type="text" id="fname" required />
+    </div>
+
+    <div>
+        <label>Last Name</label>
+        <input type="text" id="lname" required />
+    </div>
+
+    <div>
+        <label>Email</label>
+        <input type="email" id="email" required />
+    </div>
+
+    <div>
+        <label>Country</label>
+        <input type="text" id="country" required />
+    </div>
+
+    <div>
+        <label>Business Type</label>
+        <input type="text" id="businessType" required />
+    </div>
+
+    <button type="submit">Submit</button>
+</form>
+
+<p id="msg"></p>
+
+<script>
+    document.getElementById("useronboardForm").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const user = {
+            firstName: document.getElementById("fname").value,
+            lastName: document.getElementById("lname").value,
+            email: document.getElementById("email").value,
+            businessType: document.getElementById("businessType").value,
+            country: document.getElementById("country").value
+        };
+
+        fetch("/api/Stripe/onboard", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(user)
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("msg").innerText = data.message;
+
+            // clear form
+            document.getElementById("useronboardForm").reset();
+        })
+        .catch(err => console.error(err));
+    });
+</script>
