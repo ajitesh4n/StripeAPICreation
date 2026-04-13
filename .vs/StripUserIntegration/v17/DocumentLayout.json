@@ -1,0 +1,37 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\achal\\StripUserIntegration\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{5F055802-657D-B7E7-6644-5AB6D28299F5}|StripUserIntegration.csproj|c:\\users\\achal\\stripuserintegration\\controllers\\stripecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{5F055802-657D-B7E7-6644-5AB6D28299F5}|StripUserIntegration.csproj|solutionrelative:controllers\\stripecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "StripeController.cs",
+              "DocumentMoniker": "C:\\Users\\achal\\StripUserIntegration\\Controllers\\StripeController.cs",
+              "RelativeDocumentMoniker": "Controllers\\StripeController.cs",
+              "ToolTip": "C:\\Users\\achal\\StripUserIntegration\\Controllers\\StripeController.cs",
+              "RelativeToolTip": "Controllers\\StripeController.cs",
+              "ViewState": "AgIAAIwAAAAAAAAAAAAkwJoAAAAlAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-05T11:10:41.244Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

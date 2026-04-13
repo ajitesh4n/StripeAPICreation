@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Identity.Client;
 using Stripe;
+using Stripe.Checkout;
 using StripUserIntegration.Models;
 using static StripUserIntegration.Models.StripeUser;
 
@@ -18,15 +20,24 @@ public class StripeController : ControllerBase
     [HttpPost("onboard")]
     public async Task<IActionResult> OnboardUser([FromBody] StripeOnboardRequest request)
     {
-        try { 
-        // Validate input
-        if (string.IsNullOrWhiteSpace(request.Email)) return BadRequest("Email required.");
+        try {
+            var existingUser = _dbContext.StripeAccounts
+                .FirstOrDefault(x => x.Email == request.Email);
+            if (existingUser != null)
+            {
+                return BadRequest(new
+                {
+                    message = _configuration["Stripe:DuplicateUser"]
+                });
+            }
+            // Validate input
+            if (string.IsNullOrWhiteSpace(request.Email)) return BadRequest("Email required.");
         // Use an ISO country code property instead of Name
         var countryCode = request.Country ?? "US";
 
         var accountOptions = new AccountCreateOptions
         {
-            Type = "express",
+            Type = _configuration["Stripe:OnboardType"],
             Country = countryCode,
             BusinessType = request.BusinessType,
             Individual = new AccountIndividualOptions
@@ -55,8 +66,8 @@ public class StripeController : ControllerBase
         var linkOptions = new AccountLinkCreateOptions
         {
             Account = account.Id,
-            RefreshUrl = "https://connect.stripe.com/reauth",
-            ReturnUrl = "https://connect.stripe.com/success",
+            RefreshUrl = _configuration["Stripe:RefreshUrl"],
+            ReturnUrl = _configuration["Stripe:ReturnUrl"],
             Type = "account_onboarding"
         };
 
@@ -109,7 +120,7 @@ public class StripeController : ControllerBase
 
         if (account.DetailsSubmitted)
         {
-            return Ok("Onboarding already completed");
+            return Ok(_configuration["Stripe:OnboardAlreadyDone"]);
         }
         var options = new AccountLinkCreateOptions
         {
@@ -134,6 +145,8 @@ public class StripeController : ControllerBase
     {
         try
         {
+            var resendOnboardUrl = _configuration["Stripe:ResendOnboardUrl"] + request.AccountId;
+            var ReturnUrl = _configuration["Stripe:ReturnUrl"];
             if (string.IsNullOrEmpty(request.AccountId))
                 return BadRequest("AccountId is required");
 
@@ -148,8 +161,8 @@ public class StripeController : ControllerBase
             var options = new AccountLinkCreateOptions
             {
                 Account = request.AccountId,
-                RefreshUrl = $"https://connect.stripe.com/api/stripe/resend-onboarding/{request.AccountId}",
-                ReturnUrl = "https://connect.stripe.com/success",
+                RefreshUrl = resendOnboardUrl,
+                ReturnUrl = ReturnUrl,
                 Type = "account_onboarding",
             };
 
@@ -177,7 +190,7 @@ public class StripeController : ControllerBase
             var stripeEvent = EventUtility.ConstructEvent(
                 json,
                 Request.Headers["Stripe-Signature"],
-                "your_webhook_secret" // from Stripe dashboard
+                 _configuration["Stripe:WebhookSecret"] // from Stripe dashboard
             );
 
             switch (stripeEvent.Type)
@@ -195,6 +208,24 @@ public class StripeController : ControllerBase
                 case "account.updated":
                     var account = stripeEvent.Data.Object as Account;
                     await UpdateStripeAccount(account);
+                    break;
+
+                case "checkout.session.completed":
+                    var session = stripeEvent.Data.Object as Session;
+
+                    var sessionId = session.Id;
+
+                    var payment = _dbContext.TransferPaymentRequest
+                        .FirstOrDefault(x => x.StripeSessionId == sessionId);
+
+                    if (payment != null)
+                    {
+                        payment.PaymentStatus = "Succeeded";
+                        payment.PaymentIntentId = session.PaymentIntentId;
+                        payment.UpdatedDate = DateTime.UtcNow;
+
+                        _dbContext.SaveChanges();
+                    }
                     break;
 
             }
@@ -333,4 +364,145 @@ public class StripeController : ControllerBase
             return BadRequest($"API Error: {ex.Message}");
         }
     }
+
+    [HttpPost("create-transfer-payment-link")]
+    public IActionResult CreateTransferPaymentLink([FromBody] TransferPaymentRequest request)
+{
+    try
+    {
+            // ✅ Save payment in DB first
+            var payment = new TransferPaymentRequest
+            {
+                Amount = request.Amount,
+                Currency = request.Currency,
+                DestinationAccountId = request.DestinationAccountId,
+                PlatformFee = request.PlatformFee,
+                ProductName = request.ProductName,
+                OrderId = request.OrderId,
+                CustomerEmail = request.CustomerEmail,
+                PaymentStatus = "Pending",
+                CreatedDate = DateTime.UtcNow
+            };
+
+            _dbContext.TransferPaymentRequest.Add(payment);
+            _dbContext.SaveChanges();
+
+
+            var options = new SessionCreateOptions
+        {
+            PaymentMethodTypes = new List<string> { "card" },
+            Mode = "payment",
+
+            SuccessUrl = _configuration["Stripe:PaymentSuccessUrl"],
+            CancelUrl = _configuration["Stripe:PaymentCancelUrl"],
+
+            LineItems = new List<SessionLineItemOptions>
+            {
+                new SessionLineItemOptions
+                {
+                    Quantity = 1,
+
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        Currency = request.Currency,
+                        UnitAmount = request.Amount,
+
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = request.ProductName
+                        }
+                    }
+                }
+            },
+
+            // 🔥 Transfer to connected account
+            PaymentIntentData = new SessionPaymentIntentDataOptions
+            {
+                TransferData = new SessionPaymentIntentDataTransferDataOptions
+                {
+                    Destination = request.DestinationAccountId
+                },
+
+                // Platform fee
+                ApplicationFeeAmount = request.PlatformFee,
+
+                Metadata = new Dictionary<string, string>
+                {
+                    { "orderId", request.OrderId }
+                }
+            }
+        };
+
+            var service = new SessionService();
+            var session = service.Create(options);
+            // ✅ Update DB with Stripe SessionId
+            payment.StripeSessionId = session.Id;
+
+            _dbContext.TransferPaymentRequest.Update(payment);
+            _dbContext.SaveChanges();
+
+
+            return Ok(new
+        {
+            paymentUrl = session.Url
+        });
+    }
+    catch (StripeException ex)
+    {
+        return BadRequest(new
+        {
+            message = ex.Message
+        });
+    }
+}
+
+    [HttpGet("onboarding/success")]
+    public IActionResult OnboardingSuccess(string accountId)
+    {
+        var service = new AccountService();
+        var account = service.Get(accountId);
+
+        if (account.DetailsSubmitted)
+        {
+            return Content("Onboarding Completed ✅");
+        }
+
+        return Content("Onboarding Pending ⏳");
+    }
+
+    [HttpGet("get-onboard-status/{accountId}")]
+    public IActionResult GetOnboardStatus(string accountId)
+    {
+        try
+        {
+            var account = _dbContext.StripeAccounts
+                .FirstOrDefault(x => x.StripeAccountId == accountId);
+
+            if (account == null)
+            {
+                return NotFound(new
+                {
+                    message = "Account not found"
+                });
+            }
+
+            return Ok(new
+            {
+                accountId = account.StripeAccountId,
+                email = account.Email,
+                detailsSubmitted = account.DetailsSubmitted,
+                chargesEnabled = account.ChargesEnabled,
+                payoutsEnabled = account.PayoutsEnabled,
+                onboardingCompleted = account.OnboardingCompleted
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new
+            {
+                message = ex.Message
+            });
+        }
+    }
+
 }

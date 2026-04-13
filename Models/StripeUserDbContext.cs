@@ -17,6 +17,7 @@ public partial class StripeUserDbContext : DbContext
 
     public virtual DbSet<TblUser> TblUsers { get; set; }
     public DbSet<StripeAccounts> StripeAccounts { get; set; }
+    public DbSet<TransferPaymentRequest> TransferPaymentRequest { get; set; }
     public DbSet<Payment> Payments { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
