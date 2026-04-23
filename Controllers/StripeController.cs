@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Client;
 using Stripe;
 using Stripe.Checkout;
@@ -16,7 +17,7 @@ public class StripeController : ControllerBase
         _configuration = configuration;
         _dbContext = dbContext;
     }
-
+    [Authorize]
     [HttpPost("onboard")]
     public async Task<IActionResult> OnboardUser([FromBody] StripeOnboardRequest request)
     {
@@ -109,6 +110,7 @@ public class StripeController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpGet("resend-onboarding/{accountId}")]
     public IActionResult ResendOnboarding(string accountId)
     {
@@ -139,6 +141,7 @@ public class StripeController : ControllerBase
         });
     }
 
+    [Authorize]
     [HttpPost("resend-onboarding")]
     public IActionResult ResendOnboardingPost([FromBody] ResendOnboardLink request)
     {
@@ -294,6 +297,7 @@ public class StripeController : ControllerBase
         await _dbContext.SaveChangesAsync();
     }
 
+    [Authorize]
     [HttpPost("payment")]
     public IActionResult CreatePayment([FromBody] PaymentRequest request)
     {
@@ -364,6 +368,7 @@ public class StripeController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpPost("create-transfer-payment-link")]
     public IActionResult CreateTransferPaymentLink([FromBody] TransferPaymentRequest request)
 {
@@ -469,6 +474,7 @@ public class StripeController : ControllerBase
         return Content("Onboarding Pending ⏳");
     }
 
+    [Authorize]
     [HttpGet("get-onboard-status/{accountId}")]
     public IActionResult GetOnboardStatus(string accountId)
     {
