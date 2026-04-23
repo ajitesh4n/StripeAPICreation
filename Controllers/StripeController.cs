@@ -102,10 +102,9 @@ public class StripeController : ControllerBase
 
         catch (Exception ex)
     {
-            return StatusCode(500, new
+            return BadRequest(new
             {
-                message = ex.Message,
-                details = ex
+                message = ex.Message
             });
         }
     }
