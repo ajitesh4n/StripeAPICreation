@@ -24,8 +24,10 @@ public class UserController : Controller
     [HttpPost("login")]
     public IActionResult Login(StripUserIntegration.Models.LoginRequest model)
     {
-        if (model.Username == "admin" &&
-            model.Password == "12345")
+        var userName = _configuration["Login:UserName"];
+        var userPassword = _configuration["Login:Password"];
+        if (model.Username == userName &&
+            model.Password == userPassword)
         {
             var token = GenerateJwtToken(model.Username);
 
