@@ -6,11 +6,10 @@ using StripUserIntegration.Models;
 using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// JWT Settings
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+var unAuthorized = builder.Configuration["Stripe:UnAuthorized"];
+var forBidden = builder.Configuration["Stripe:Forbidden"];
 
-// Add Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme =
@@ -28,7 +27,6 @@ builder.Services.AddAuthentication(options =>
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-
             ValidIssuer = jwtSettings["Issuer"],
             ValidAudience = jwtSettings["Audience"],
 
@@ -51,7 +49,7 @@ builder.Services.AddAuthentication(options =>
                 new
                 {
                     status = 401,
-                    message = "Unauthorized - Token is missing or invalid"
+                    message = unAuthorized
                 });
 
             return context.Response.WriteAsync(result);
@@ -66,7 +64,7 @@ builder.Services.AddAuthentication(options =>
                 new
                 {
                     status = 403,
-                    message = "Forbidden - You do not have permission"
+                    message = forBidden
                 });
 
             return context.Response.WriteAsync(result);
@@ -82,28 +80,24 @@ builder.Services.AddControllersWithViews();
 
 // Database
 builder.Services.AddDbContext<StripeUserDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Stripe Key
-StripeConfiguration.ApiKey =
-    builder.Configuration["Stripe:SecretKey"];
+StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
 var app = builder.Build();
-
-// Middleware Order (VERY IMPORTANT)
 
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 
-app.UseRouting(); // MUST be before Authentication
+app.UseRouting();
 
-app.UseAuthentication(); // FIRST
+app.UseAuthentication();
 
-app.UseAuthorization();  // SECOND
+app.UseAuthorization();
 
-// Optional: Auto-create DB
+// Auto-create DB
 /*
 using (var scope = app.Services.CreateScope())
 {
@@ -113,12 +107,10 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 */
-
-// Routing
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=User}/{action=Create}/{id?}");
 
-app.MapControllers(); // Important for API controllers
+app.MapControllers();
 
 app.Run();
